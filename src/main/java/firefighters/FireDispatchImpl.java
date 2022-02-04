@@ -5,7 +5,6 @@ import api.CityNode;
 import api.FireDispatch;
 import api.Firefighter;
 import api.exceptions.NoFireFoundException;
-import com.google.common.collect.Lists;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import java.util.*;
@@ -86,10 +85,7 @@ public class FireDispatchImpl implements FireDispatch {
                 ? bestRoute.size() / firefighters.size()
                 : bestRoute.size() / firefighters.size() + 1;
 
-        // sequentially split the route into multiple routes.
-        // Ex. 3 firefighters and 6 fires: Firefighter 1 will be assigned [0,1], Firefighter 2 will be assigned [2,3].
-        // Firefighter 3 will be assigned [4,5]
-        List<List<CityNode>> routes = Lists.partition(bestRoute, routeSize);
+        List<List<CityNode>> routes = getRoutes(bestRoute);
 
         for (int f = 0; f < routes.size(); f++) {
             List<CityNode> firefighterRoute = routes.get(f);
@@ -111,6 +107,21 @@ public class FireDispatchImpl implements FireDispatch {
                 }
             }
         }
+    }
+
+    @Override
+    public List<List<CityNode>> getRoutes(List<CityNode> bestRoute) {
+        List<List<CityNode>> routes = new ArrayList<>();
+        int routeSize = bestRoute.size() / firefighters.size();
+        int numRoutesWithExtraStops = bestRoute.size() % firefighters.size();
+        int routePosition = 0;
+        for (int i = 0; i < firefighters.size(); i++) {
+            int routeSizeForThisFirefighter = i < numRoutesWithExtraStops ? routeSize + 1 : routeSize;
+            routes.add(bestRoute.subList(routePosition, (routePosition + routeSizeForThisFirefighter)));
+            routePosition += routeSizeForThisFirefighter;
+        }
+
+        return routes;
     }
 
     private void sendFirefighterToBuilding(Firefighter firefighter, CityNode startingLocation, CityNode nextLocation) throws NoFireFoundException {
